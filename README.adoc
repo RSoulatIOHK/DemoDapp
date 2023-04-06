@@ -1,0 +1,235 @@
+= https://github.com/input-output-hk/plutus-apps[The Plutus Application Framework]
+:email: plutus@iohk.io
+:author: Input Output HK Limited
+:toc: left
+:reproducible:
+
+The Plutus Application Framework, part of the Plutus Platform, is a framework for developing distributed applications using the Cardano blockchain.
+For more information about the projects, see the <<user-documentation>>.
+
+This repository contains:
+
+* Plutus Platform
+** Libraries which implement the Plutus Application Framework, a framework for writing applications that work with Cardano.
+** A selection of end-to-end usecases written with the Plutus Application Framework
+** The Plutus Playground, a web-based playground for learning and writing basic Plutus Applications.
+
+[IMPORTANT]
+====
+The rest of this README is focussed on people who want to develop or contribute to the Framework.
+
+For people who want to *use* the Framework, please consult the <<user-documentation>>.
+====
+
+[[cache-warning]]
+[IMPORTANT]
+====
+DO NOT IGNORE THIS
+
+If you want to use Nix with this project, make sure to set up the xref:iohk-binary-cache[IOHK binary cache].
+If you do not do this, you will end up building GHC, which takes several hours.
+If you find yourself building GHC, STOP and fix the cache.
+====
+
+== Documentation
+
+=== User documentation
+
+The main documentation is located https://plutus-apps.readthedocs.io/en/latest/[here].
+
+The generated Haskell API documentation (haddocks) are here:
+<https://playground.plutus.iohkdev.io/doc/haddock>.
+
+
+=== Talks
+
+- https://www.youtube.com/watch?v=MpWeg6Fg0t8[Functional Smart Contracts on Cardano]
+- https://www.youtube.com/watch?v=usMPt8KpBeI[The Plutus Platform]
+
+=== Specifications and design
+
+- https://hydra.iohk.io/job/Cardano/plutus/linux.docs.plutus-report/latest/download-by-type/doc-pdf/plutus[Plutus Technical Report] (draft)
+
+== Branching, Versioning and Releases
+
+There are two protected development branches in `plutus-apps`: `main` and `next-node`.
+We adopt the PVP versioning scheme.
+Check out link:doc/BRANCHING-AND-RELEASE.adoc[Branching Policy and Release Process] to learn more.
+
+=== Dependency update
+
+The dependency update policy is dependent on the protected branch.
+
+For `cardano-node`, we define major-version-bound the range of versions which are compatible with a specific era.
+For example, for the Alonzo era, that would be `>= 1.29 && < 1.35`. For the Vasil era, that would be `>= 1.35 && < 1.36`.
+
+Independently of the protected branch:
+
+* It should always use the same first-major-version of `plutus` as the one used by the `plutus` dependency of `cardano-node`
+* It should always be safe to upgrade to a new second-major-version of `plutus`: at worst this will lead to some code breakage.
+* It should, unless specified otherwise, use the same version for transitive dependencies (`cardano-ledger`, `ouroboros-network`, etc.) with `cardano-node`
+* It should pin the major version of `cardano-node` for all packages
+* It should pin the first and second-major version of `plutus` for all packages
+
+`main` branch:
+
+* It should not update `cardano-node` to a new major-version. In other words, it should use a `cardano-node` version which is compatible with the current Cardano mainnet
+* It should use a `cardano-wallet` version which is compatible with the current `cardano-node` version
+
+`next-node` branch:
+
+* It may update the `cardano-node` to a new major-version. In other words, it may use a `cardano-node` version which is incompatible with the current Cardano mainnet
+* It may use a `cardano-wallet` version which is incompatible with the current `cardano-node` version
+
+=== Version ranges
+
+Packages which depend on `plutus-apps` packages should use version ranges to control which version of those packages they build against.
+
+* Packages in `plutus-apps` which are used downstream should pin the major-version of each other (e.g. `plutus-pab-1.0.1` should depend on `plutus-contract ^>= 1.0`).
+* Downstream packages should pin at least the first-major-version of `plutus-apps` packages.
+** Upgrading to a new second-major-version should always be safe for working on the current mainnet, with at most code breakage (following the PVP). Users may of course want to pin this version as well to avoid such breakage.
+* Downstream packages pulling in `plutus-apps` packages via `source-repository-package` stanzas should always take tagged commits.
+
+== Working with the project
+
+=== How to submit an issue
+
+Issues can be filed in the https://github.com/input-output-hk/plutus-apps/issues[GitHub Issue tracker].
+
+However, note that this is pre-release software, so we will not usually be providing support.
+
+[[how-to-develop]]
+=== How to develop and contribute to the project
+
+See link:CONTRIBUTING{outfilesuffix}[CONTRIBUTING], which describes our processes in more detail including development environments; and link:ARCHITECTURE{outfilesuffix}[ARCHITECTURE], which describes the structure of the repository.
+
+=== How to depend on the project from another Haskell project
+
+None of our libraries are on Hackage, unfortunately (many of our dependencies aren't either).
+So for the time being, you need to:
+
+. Add `plutus-apps` as a `source-repository-package` to your `cabal.project`.
+. Copy the `source-repository-package` stanzas from our `cabal.project` to yours.
+. Copy additional stanzas from our `cabal.project` as you need, e.g. you may need some of the `allow-newer` stanzas.
+
+The https://github.com/input-output-hk/plutus-starter[plutus-starter] project provides an example.
+
+=== How to build the project's artifacts
+
+This section contains information about how to build the project's artifacts for independent usage.
+For development work see <<how-to-develop>> for more information.
+
+[[prerequisites]]
+==== Prerequisites
+
+The Haskell libraries in the Plutus Platform are built with `cabal` and Nix.
+The other artifacts (docs etc.) are also most easily built with Nix.
+
+===== Nix
+
+Install https://nixos.org/nix/[Nix] (recommended). following the instructions on the https://nixos.org/nix/[Nix website].
+
+Make sure you have read and understood the xref:cache-warning[cache warning].
+DO NOT IGNORE THIS.
+
+See <<nix-advice>> for further advice on using Nix.
+
+===== Non-Nix
+
+You can build some of the Haskell packages without Nix, but this is not recommended and we don't guarantee that these prerequisites are sufficient.
+For instance, you would have to build and install this fork of https://github.com/input-output-hk/libsodium/commit/66f017f16633f2060db25e17c170c2afa0f2a8a1[`libsodium`] from source.
+If you use Nix, these tools are provided for you via `shell.nix`, and you do *not* need to install them yourself.
+
+* If you want to build our Haskell packages with https://www.haskell.org/cabal/[`cabal`], then install it.
+* If you want to build our Haskell packages with https://haskellstack.org/[`stack`], then install it.
+
+[[building-with-nix]]
+==== How to build the Haskell packages and other artifacts with Nix
+
+Run `nix build -f default.nix plutus-apps.haskell.packages.plutus-pab.components.library` from the root to build the Plutus PAB library.
+
+See <<nix-build-attributes>> to find out what other attributes you can build.
+
+==== How to build the Haskell packages with `cabal`
+
+The Haskell packages can be built directly with `cabal`.
+We do this during development (see <<how-to-develop>>).
+The best way is to do this is inside a `nix-shell`.
+
+[NOTE]
+====
+For fresh development setups, you also need to run `cabal update`.
+====
+
+Run `cabal build plutus-pab` from the root to build the Plutus PAB library.
+
+See the link:./cabal.project[cabal project file] to see the other packages that you can build with `cabal`.
+
+=== Deployment
+
+The Plutus Playground is automatically deployed upon certain pushes to GitHub
+
+* https://plutus-playground-plutus-apps-staging.plutus.aws.iohkdev.io/[Staging] is deployed from every commit pushed to `main` (this URL subject to change)
+* https://playground.plutus.iohkdev.io/[Production] is deployed from every release tag (matching `vYYYY-MM-DD`)
+
+For more details, including instructions for setting up ad hoc testing deployments, see https://github.com/input-output-hk/plutus-ops[the plutus-ops repo].
+
+[[nix-advice]]
+== Nix
+
+[[iohk-binary-cache]]
+=== How to set up the IOHK binary caches
+
+Adding the IOHK binary cache to your Nix configuration will speed up
+builds a lot, since many things will have been built already by our CI.
+
+If you find you are building packages that are not defined in this
+repository, or if the build seems to take a very long time then you may
+not have this set up properly.
+
+To set up the cache:
+
+. On non-NixOS, edit `/etc/nix/nix.conf` and add the following lines:
++
+----
+substituters = https://hydra.iohk.io https://cache.iog.io https://cache.nixos.org/
+trusted-public-keys = hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
+extra-experimental-features = nix-command flakes
+----
++
+[NOTE]
+====
+If you don't have an `/etc/nix/nix.conf` or don't want to edit it, you may add the `nix.conf` lines to `~/.config/nix/nix.conf` instead.
+You must be a https://nixos.org/nix/manual/#ssec-multi-user[trusted user] to do this.
+====
+. On NixOS, set the following NixOS options:
++
+----
+nix = {
+  binaryCaches          = [ "https://hydra.iohk.io" "https://cache.iog.io" ];
+  binaryCachePublicKeys = [ "hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ=" ];
+};
+----
+
+[[nix-build-attributes]]
+=== Which attributes to use to build different artifacts
+
+link:./default.nix[`default.nix`] defines a package set with attributes for all the artifacts you can build from this repository.
+These can be built using `nix build`.
+For example:
+
+----
+nix build -f default.nix docs.site
+----
+
+.Example attributes
+* Project packages: defined inside `plutus-apps.haskell.packages`
+** e.g. `plutus-apps.haskell.packages.plutus-pab.components.library`
+
+There are other attributes defined in link:./default.nix[`default.nix`].
+
+== Licensing
+
+You are free to copy, modify, and distribute the Plutus Platform with
+under the terms of the Apache 2.0 license. See the link:./LICENSE[LICENSE]
+and link:./NOTICE[NOTICE] files for details.
